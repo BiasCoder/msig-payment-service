@@ -12,6 +12,7 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
     private String transactionId;
     private String status; // PENDING, SUCCESS, FAILED
     private Double amount;
