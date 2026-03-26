@@ -5,6 +5,7 @@ import com.test.msigpaymentservice.model.Payment;
 import com.test.msigpaymentservice.repository.PaymentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Optional;
 
@@ -13,6 +14,9 @@ public class PaymentService {
 
     @Autowired
     private PaymentRepository paymentRepository;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     public Payment createPayment(PaymentRequestDTO request) {
         Optional<Payment> existing = paymentRepository.findByTransactionId(request.getTransactionId());
@@ -35,7 +39,15 @@ public class PaymentService {
 
         // IMPORTANT: prevent double update
         if ("SUCCESS".equals(payment.getStatus())) {
-            return payment; // ignore duplicate callback
+            // Update Order
+            String orderUrl = "http://localhost:8082/api/orders/callback?transactionId="
+                    + transactionId + "&status=SUCCESS";
+            restTemplate.postForObject(orderUrl, null, String.class);
+
+            // Send Notification
+            String notifUrl = "http://localhost:8083/api/notifications?transactionId="
+                    + transactionId + "&status=SUCCESS";
+            restTemplate.postForObject(notifUrl, null, String.class);
         }
 
         payment.setStatus(status);
